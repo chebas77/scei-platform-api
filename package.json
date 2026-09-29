@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:generate:custom": "drizzle-kit generate --custom",
     "db:migrate": "ts-node -r tsconfig-paths/register src/shared/database/migrate.ts",
+    "openapi:export": "ts-node -r tsconfig-paths/register src/cli/export-openapi.ts",
     "cli:create-superadmin": "ts-node -r tsconfig-paths/register src/cli/create-superadmin.ts",
     "test": "jest --config jest.config.js --runInBand",
     "test:unit": "jest --config jest.config.js --runInBand --testPathPattern 'src/.*\\.spec\\.ts$'",

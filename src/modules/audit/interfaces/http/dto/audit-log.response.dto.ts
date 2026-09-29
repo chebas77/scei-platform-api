@@ -9,7 +9,7 @@ export class AuditLogResponseDto {
   @ApiProperty({ type: String, format: 'date-time' })
   occurredAt: string;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ format: 'uuid', nullable: true, type: String })
   actorUserId: string | null;
 
   @ApiProperty({ enum: ['user', 'system'] })
@@ -21,19 +21,19 @@ export class AuditLogResponseDto {
   @ApiProperty({ enum: ['success', 'denied', 'failure'] })
   outcome: string;
 
-  @ApiPropertyOptional({ nullable: true, example: 'tenant' })
+  @ApiPropertyOptional({ nullable: true, type: String, example: 'tenant' })
   resourceType: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: String })
   resourceId: string | null;
 
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({ format: 'uuid', nullable: true, type: String })
   tenantId: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: String })
   ip: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: String })
   requestId: string | null;
 
   @ApiProperty({ type: 'object', additionalProperties: true })
@@ -55,6 +55,6 @@ export class ChainVerificationResponseDto {
   @ApiProperty({ example: 1280, description: 'Registros verificados antes de terminar o de encontrar una ruptura.' })
   checked: number;
 
-  @ApiProperty({ nullable: true, example: null, description: 'Primer id alterado, si la cadena está rota.' })
+  @ApiProperty({ nullable: true, type: Number, example: null, description: 'Primer id alterado, si la cadena está rota.' })
   firstBrokenId: number | null;
 }
