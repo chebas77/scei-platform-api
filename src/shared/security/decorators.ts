@@ -1,8 +1,11 @@
 import { applyDecorators, createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { FastifyRequest } from 'fastify';
-import { AuthContext } from './auth-context';
+import { AuthContext, TenantAuthContext } from './auth-context';
 import { RequestMeta } from '../audit/audit-recorder.port';
+
+/** Header obligatorio en toda ruta de ámbito colegio; declara para cuál colegio actúa la solicitud. */
+export const TENANT_HEADER = 'x-tenant-slug';
 
 export const IS_PUBLIC_KEY = 'scei:public';
 export const AUTH_ONLY_KEY = 'scei:auth-only';
@@ -44,6 +47,13 @@ export const CurrentAuth = createParamDecorator((_data: unknown, ctx: ExecutionC
   const req = ctx.switchToHttp().getRequest<FastifyRequest>();
   if (!req.auth) throw new Error('CurrentAuth usado en una ruta sin autenticación');
   return req.auth;
+});
+
+/** Colegio ya verificado por `PermissionsGuard` (header `X-Tenant-Slug` + membresía activa). Solo válido en controladores con `scope: 'tenant'`. */
+export const CurrentTenant = createParamDecorator((_data: unknown, ctx: ExecutionContext): TenantAuthContext => {
+  const req = ctx.switchToHttp().getRequest<FastifyRequest>();
+  if (!req.tenant) throw new Error('CurrentTenant usado en una ruta sin ámbito de colegio');
+  return req.tenant;
 });
 
 export const ReqMeta = createParamDecorator((_data: unknown, ctx: ExecutionContext): RequestMeta => {

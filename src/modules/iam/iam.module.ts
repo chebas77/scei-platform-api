@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { IDENTITY_PROVISIONING } from '../../shared/contracts/identity.contracts';
+import { IDENTITY_PROVISIONING, USER_DIRECTORY } from '../../shared/contracts/identity.contracts';
 import { APP_CONFIG, AppConfig } from '../../shared/config/env';
 import { ACCESS_TOKEN_VERIFIER, SESSION_VALIDATOR } from '../../shared/security/auth-context';
 import { ConfirmMfaUseCase } from './application/confirm-mfa.use-case';
@@ -56,8 +56,9 @@ import { AuthController } from './interfaces/http/auth.controller';
     GetMeUseCase,
     IdentityProvisioningService,
     { provide: IDENTITY_PROVISIONING, useExisting: IdentityProvisioningService },
+    { provide: USER_DIRECTORY, useExisting: IdentityProvisioningService },
     CreatePlatformAdminUseCase,
   ],
-  exports: [ACCESS_TOKEN_VERIFIER, SESSION_VALIDATOR, IDENTITY_PROVISIONING, CreatePlatformAdminUseCase],
+  exports: [ACCESS_TOKEN_VERIFIER, SESSION_VALIDATOR, IDENTITY_PROVISIONING, USER_DIRECTORY, CreatePlatformAdminUseCase],
 })
 export class IamModule {}

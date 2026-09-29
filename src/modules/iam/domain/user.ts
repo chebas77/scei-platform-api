@@ -61,6 +61,15 @@ export class User {
   get isActive(): boolean {
     return this.p.status === 'active';
   }
+  get status(): UserStatus {
+    return this.p.status;
+  }
+  get lastLoginAt(): Date | null {
+    return this.p.lastLoginAt;
+  }
+  get createdAt(): Date {
+    return this.p.createdAt;
+  }
 
   isLocked(now: Date): boolean {
     return this.p.lockedUntil !== null && this.p.lockedUntil > now;
@@ -105,6 +114,16 @@ export class User {
     this.p.mfaEnabled = true;
     this.p.mfaLastStep = step;
     this.p.tokenVersion += 1;
+  }
+
+  /** Deshabilita la cuenta e invalida sus sesiones activas. */
+  disable(): void {
+    this.p.status = 'disabled';
+    this.p.tokenVersion += 1;
+  }
+
+  enable(): void {
+    this.p.status = 'active';
   }
 
   toProps(): UserProps {

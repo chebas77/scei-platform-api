@@ -30,6 +30,11 @@ export class DrizzleTenantRepository implements TenantRepositoryPort {
     return row ? toDomain(row) : null;
   }
 
+  async findBySlug(slug: string): Promise<Tenant | null> {
+    const [row] = await this.db.select().from(tenants).where(eq(tenants.slug, slug)).limit(1);
+    return row ? toDomain(row) : null;
+  }
+
   async findByIdForUpdate(id: string, tx: Tx): Promise<Tenant | null> {
     const [row] = await pick(this.db, tx).select().from(tenants).where(eq(tenants.id, id)).limit(1).for('update');
     return row ? toDomain(row) : null;

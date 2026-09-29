@@ -47,7 +47,7 @@ export class RoleManagementService {
   }
 
   async updateRole(id: string, patch: { name?: string; description?: string; requiresMfa?: boolean }, actorId: string, meta: RequestMeta): Promise<Role> {
-    const role = await this.requireMutable(id);
+    const role = await this.requireNotSystem(id);
     const updated = await this.roles.update(role.id, patch);
     if (!updated) throw new AppException(ErrorCodes.RBAC_ROLE_NOT_FOUND);
     await this.audit.record({
@@ -58,7 +58,7 @@ export class RoleManagementService {
   }
 
   async deleteRole(id: string, actorId: string, meta: RequestMeta): Promise<void> {
-    await this.requireMutable(id);
+    await this.requireNotSystem(id);
     const result = await this.roles.delete(id);
     if (result === 'not_found') throw new AppException(ErrorCodes.RBAC_ROLE_NOT_FOUND);
     if (result === 'in_use') throw new AppException(ErrorCodes.RBAC_ROLE_IN_USE);
@@ -66,7 +66,7 @@ export class RoleManagementService {
   }
 
   async setModules(id: string, moduleIds: string[], actorId: string, meta: RequestMeta): Promise<RoleDetail> {
-    const role = await this.requireMutable(id, { allowLockedRole: false });
+    const role = await this.requireModulesEditable(id);
     const unique = [...new Set(moduleIds)];
     const found = await this.catalog.findModulesByIds(unique);
     if (found.length !== unique.length) throw new AppException(ErrorCodes.RBAC_MODULE_NOT_FOUND);
@@ -80,7 +80,7 @@ export class RoleManagementService {
   }
 
   async setPermissions(id: string, permissionIds: string[], actorId: string, meta: RequestMeta): Promise<RoleDetail> {
-    const role = await this.requireMutable(id, { allowLockedRole: false });
+    const role = await this.requireModulesEditable(id);
     const unique = [...new Set(permissionIds)];
     const found = await this.catalog.findPermissionsByIds(unique);
     if (found.length !== unique.length) throw new AppException(ErrorCodes.RBAC_PERMISSION_NOT_FOUND);
@@ -99,11 +99,21 @@ export class RoleManagementService {
     return role;
   }
 
-  /** Los roles del sistema son de solo lectura; los bloqueados tampoco pierden módulos/permisos. */
-  private async requireMutable(id: string, opts: { allowLockedRole?: boolean } = { allowLockedRole: true }): Promise<Role> {
+  /** Identidad de un rol de sistema (código, nombre, MFA): no se renombra ni se borra. */
+  private async requireNotSystem(id: string): Promise<Role> {
     const role = await this.requireRole(id);
-    if (LOCKED_ROLE_CODES.includes(role.code) && opts.allowLockedRole === false) throw new AppException(ErrorCodes.RBAC_ROLE_LOCKED);
     if (role.isSystem) throw new AppException(ErrorCodes.RBAC_ROLE_SYSTEM_PROTECTED);
+    return role;
+  }
+
+  /**
+   * Sus módulos/permisos sí se pueden editar aunque el rol sea de sistema (p. ej. `school_admin`
+   * es una plantilla: la app nace sin módulos de colegio y el SuperAdmin se los asigna aquí).
+   * Solo los roles bloqueados (`LOCKED_ROLE_CODES`) no pueden perder módulos.
+   */
+  private async requireModulesEditable(id: string): Promise<Role> {
+    const role = await this.requireRole(id);
+    if (LOCKED_ROLE_CODES.includes(role.code)) throw new AppException(ErrorCodes.RBAC_ROLE_LOCKED);
     return role;
   }
 }

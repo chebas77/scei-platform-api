@@ -44,6 +44,14 @@ export const envSchema = z.object({
   SWAGGER_ENABLED: bool.optional(),
   /** Base pública del frontend para armar el enlace de invitación. */
   APP_PUBLIC_URL: z.string().url().default('http://localhost:3001'),
+
+  /** SMTP para invitaciones por correo. Si falta SMTP_HOST, se usa el adaptador de consola (dev/test). */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: bool.default('false'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
 });
 
 export type AppConfig = Omit<z.infer<typeof envSchema>, 'SWAGGER_ENABLED'> & { SWAGGER_ENABLED: boolean };

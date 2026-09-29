@@ -4,7 +4,8 @@
  * Formato del código: <PREFIJO>-<NNN>. El prefijo identifica el módulo:
  *   SYS  sistema/transversal   VAL  validación     AUTH  autenticación e identidad
  *   RBAC roles y permisos      TEN  tenants        PLAN  planes
- *   AUD  auditoría             MET  métricas
+ *   AUD  auditoría             MET  métricas       USR   usuarios/operadores
+ *   KIO  kioscos (colegio)
  *
  * Reglas:
  *  - Un código nunca se reutiliza ni cambia de significado (los clientes dependen de él).
@@ -62,6 +63,7 @@ export const ErrorCodes = define({
   TEN_PURGE_GRACE_PERIOD: { code: 'TEN-006', status: 409, message: 'El colegio aún está dentro del periodo de gracia previo al borrado.' },
   TEN_CERTIFICATE_NOT_FOUND: { code: 'TEN-007', status: 404, message: 'El colegio no tiene constancia de borrado.' },
   TEN_INVITATION_EMAIL_TAKEN: { code: 'TEN-008', status: 409, message: 'Ese correo ya es administrador de este colegio.' },
+  TEN_CONTEXT_REQUIRED: { code: 'TEN-009', status: 400, message: 'Falta el encabezado X-Tenant-Slug para operar sobre un colegio.' },
 
   // ── Planes ──────────────────────────────────────────────────────────────
   PLAN_NOT_FOUND: { code: 'PLAN-001', status: 404, message: 'El plan no existe.' },
@@ -71,6 +73,16 @@ export const ErrorCodes = define({
 
   // ── Auditoría y métricas ────────────────────────────────────────────────
   AUD_INVALID_RANGE: { code: 'AUD-001', status: 400, message: 'El rango de fechas no es válido.' },
+
+  // ── Usuarios y operadores ───────────────────────────────────────────────
+  USR_NOT_FOUND: { code: 'USR-001', status: 404, message: 'El usuario no existe.' },
+  USR_LAST_PLATFORM_ADMIN: { code: 'USR-002', status: 409, message: 'No puedes hacer esto: dejaría la plataforma sin ningún SuperAdmin activo.' },
+  USR_INVITATION_REDUNDANT: { code: 'USR-003', status: 409, message: 'Ese correo ya tiene ese rol en este ámbito.' },
+
+  // ── Kioscos (colegio) ───────────────────────────────────────────────────
+  KIO_NOT_FOUND: { code: 'KIO-001', status: 404, message: 'El kiosco no existe.' },
+  KIO_CODE_TAKEN: { code: 'KIO-002', status: 409, message: 'Ya existe un kiosco con ese código en este colegio.' },
+  KIO_LIMIT_REACHED: { code: 'KIO-003', status: 409, message: 'El colegio alcanzó el máximo de kioscos de su plan.' },
 } as const);
 
 export type ErrorKey = keyof typeof ErrorCodes;

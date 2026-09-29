@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { Db, DB, Tx, executor as pick } from '../../../../shared/database/tx';
 import { NewUser, UserRepositoryPort } from '../../domain/ports/user.repository.port';
 import { User, UserProps, UserStatus } from '../../domain/user';
@@ -38,6 +38,12 @@ export class DrizzleUserRepository implements UserRepositoryPort {
     return row ? User.rehydrate(toProps(row)) : null;
   }
 
+  async listByIds(ids: string[]): Promise<User[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.db.select().from(users).where(inArray(users.id, ids));
+    return rows.map((r) => User.rehydrate(toProps(r)));
+  }
+
   async getAuthState(id: string): Promise<{ status: UserStatus; tokenVersion: number } | null> {
     const [row] = await this.db.select({ status: users.status, tokenVersion: users.tokenVersion }).from(users).where(eq(users.id, id)).limit(1);
     return row ? { status: row.status as UserStatus, tokenVersion: row.tokenVersion } : null;
@@ -62,6 +68,7 @@ export class DrizzleUserRepository implements UserRepositoryPort {
       await tx
         .update(users)
         .set({
+          status: p.status,
           failedLoginAttempts: p.failedLoginAttempts,
           lockoutCount: p.lockoutCount,
           lockedUntil: p.lockedUntil,

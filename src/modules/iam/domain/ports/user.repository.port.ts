@@ -9,6 +9,7 @@ export interface NewUser {
 export interface UserRepositoryPort {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
+  listByIds(ids: string[]): Promise<User[]>;
   /** Estado mínimo para validar cada solicitud autenticada. */
   getAuthState(id: string): Promise<{ status: UserStatus; tokenVersion: number } | null>;
   /** Inserta. Devuelve `null` si el correo ya existía (carrera segura). */

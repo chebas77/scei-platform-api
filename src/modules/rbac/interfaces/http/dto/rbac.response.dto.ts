@@ -30,6 +30,7 @@ export class RoleResponseDto {
   @ApiProperty({ nullable: true, type: String }) description: string | null;
   @ApiProperty({ enum: ['platform', 'tenant'] }) scope: 'platform' | 'tenant';
   @ApiProperty() isSystem: boolean;
+  @ApiProperty({ description: 'Si es verdadero, sus módulos/permisos no se pueden cambiar (perdería la plataforma su único operador).' }) modulesLocked: boolean;
   @ApiProperty() requiresMfa: boolean;
   @ApiProperty() createdAt: string;
 }
@@ -45,6 +46,14 @@ export class RoleDetailResponseDto extends RoleResponseDto {
   @ApiProperty({ type: [String], description: 'Unión de permisos por módulo y sueltos.' }) effectivePermissions: string[];
 }
 
+export class MyPermissionsTenantResponseDto {
+  @ApiProperty() id: string;
+  @ApiProperty() slug: string;
+  @ApiProperty() legalName: string;
+}
+
 export class MyPermissionsResponseDto {
   @ApiProperty({ type: [String], example: ['tenants:read', 'plans:read'] }) permissions: string[];
+  @ApiProperty({ nullable: true, type: MyPermissionsTenantResponseDto, description: 'Colegio de estos permisos, o nulo si son de plataforma.' })
+  tenant: MyPermissionsTenantResponseDto | null;
 }

@@ -14,6 +14,6 @@ export const AuthHttpMapper = {
     }
   },
   toMe(me: MeResult): MeResponseDto {
-    return { userId: me.userId, email: me.email, mfaEnabled: me.mfaEnabled, scope: me.scope };
+    return { userId: me.userId, email: me.email, mfaEnabled: me.mfaEnabled, scope: me.scope, memberships: me.memberships };
   },
 };

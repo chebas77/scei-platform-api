@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, countDistinct, eq, isNull } from 'drizzle-orm';
+import { MembershipInfo } from '../../../../shared/contracts/rbac.contracts';
 import { Db, DB, Tx, executor as pick } from '../../../../shared/database/tx';
 import { AccessRepositoryPort } from '../../domain/ports/access.repository.port';
 import { memberships } from './schema/memberships.table';
@@ -65,6 +66,11 @@ export class DrizzleAccessRepository implements AccessRepositoryPort {
     return row ? (row.scope as 'platform' | 'tenant') : null;
   }
 
+  async findRoleById(roleId: string): Promise<{ id: string; code: string; name: string; scope: 'platform' | 'tenant' } | null> {
+    const [row] = await this.db.select({ id: roles.id, code: roles.code, name: roles.name, scope: roles.scope }).from(roles).where(eq(roles.id, roleId)).limit(1);
+    return row ? { ...row, scope: row.scope as 'platform' | 'tenant' } : null;
+  }
+
   async assign(input: { userId: string; roleId: string; tenantId: string | null }, tx?: Tx): Promise<void> {
     await pick(this.db, tx)
       .insert(memberships)
@@ -78,5 +84,47 @@ export class DrizzleAccessRepository implements AccessRepositoryPort {
   async revokeAllForTenant(tenantId: string, tx?: Tx): Promise<number> {
     const rows = await pick(this.db, tx).delete(memberships).where(eq(memberships.tenantId, tenantId)).returning({ id: memberships.id });
     return rows.length;
+  }
+
+  async listByScope(tenantId: string | null): Promise<MembershipInfo[]> {
+    const scopeWhere = tenantId === null ? isNull(memberships.tenantId) : eq(memberships.tenantId, tenantId);
+    return this.db
+      .select({ userId: memberships.userId, roleId: memberships.roleId, roleCode: roles.code, roleName: roles.name })
+      .from(memberships)
+      .innerJoin(roles, eq(roles.id, memberships.roleId))
+      .where(and(scopeWhere, eq(memberships.status, 'active')));
+  }
+
+  async countActiveUsersWithSystemRole(code: string): Promise<number> {
+    const [row] = await this.db
+      .select({ n: countDistinct(memberships.userId) })
+      .from(memberships)
+      .innerJoin(roles, eq(roles.id, memberships.roleId))
+      .where(and(eq(roles.code, code), eq(roles.isSystem, true), eq(memberships.status, 'active')));
+    return row?.n ?? 0;
+  }
+
+  async setRole(userId: string, tenantId: string | null, roleId: string, tx?: Tx): Promise<void> {
+    const ex = pick(this.db, tx);
+    const scopeWhere = tenantId === null ? isNull(memberships.tenantId) : eq(memberships.tenantId, tenantId);
+    await ex.delete(memberships).where(and(eq(memberships.userId, userId), scopeWhere));
+    await ex.insert(memberships).values({ userId, roleId, tenantId });
+  }
+
+  async listForUser(userId: string): Promise<(MembershipInfo & { tenantId: string | null })[]> {
+    return this.db
+      .select({ userId: memberships.userId, roleId: memberships.roleId, roleCode: roles.code, roleName: roles.name, tenantId: memberships.tenantId })
+      .from(memberships)
+      .innerJoin(roles, eq(roles.id, memberships.roleId))
+      .where(and(eq(memberships.userId, userId), eq(memberships.status, 'active')));
+  }
+
+  async hasActiveMembership(userId: string, tenantId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: memberships.id })
+      .from(memberships)
+      .where(and(eq(memberships.userId, userId), eq(memberships.tenantId, tenantId), eq(memberships.status, 'active')))
+      .limit(1);
+    return rows.length > 0;
   }
 }

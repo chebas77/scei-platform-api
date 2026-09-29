@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
-import { MFA_POLICY, ROLE_ASSIGNMENT, ROLE_DIRECTORY, TENANT_ACCESS_REVOKER } from '../../shared/contracts/rbac.contracts';
+import { MEMBERSHIP_DIRECTORY, MFA_POLICY, ROLE_ASSIGNMENT, ROLE_DIRECTORY, TENANT_ACCESS_REVOKER } from '../../shared/contracts/rbac.contracts';
 import { PERMISSION_RESOLVER } from '../../shared/security/auth-context';
 import { ApiCatalogScanner } from './application/api-catalog.scanner';
 import { CatalogSyncService } from './application/catalog-sync.service';
@@ -30,8 +30,9 @@ import { RbacController } from './interfaces/http/rbac.controller';
     { provide: ROLE_ASSIGNMENT, useExisting: RbacAccessService },
     { provide: MFA_POLICY, useExisting: RbacAccessService },
     { provide: TENANT_ACCESS_REVOKER, useExisting: RbacAccessService },
+    { provide: MEMBERSHIP_DIRECTORY, useExisting: RbacAccessService },
     RoleManagementService,
   ],
-  exports: [PERMISSION_RESOLVER, ROLE_DIRECTORY, ROLE_ASSIGNMENT, MFA_POLICY, TENANT_ACCESS_REVOKER],
+  exports: [PERMISSION_RESOLVER, ROLE_DIRECTORY, ROLE_ASSIGNMENT, MFA_POLICY, TENANT_ACCESS_REVOKER, MEMBERSHIP_DIRECTORY],
 })
 export class RbacModule {}

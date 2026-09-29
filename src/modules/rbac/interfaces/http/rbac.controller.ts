@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { RequestMeta } from '../../../../shared/audit/audit-recorder.port';
+import { TENANT_DIRECTORY, TenantDirectoryPort } from '../../../../shared/contracts/tenant.contracts';
+import { AppException } from '../../../../shared/errors/app.exception';
 import { ErrorCodes } from '../../../../shared/errors/error-codes';
 import { ApiErrorResponses } from '../../../../shared/http/api-error-responses.decorator';
 import { AuthContext } from '../../../../shared/security/auth-context';
-import { ApiModule, AuthenticatedOnly, CurrentAuth, ReqMeta, RequirePermission } from '../../../../shared/security/decorators';
+import { ApiModule, AuthenticatedOnly, CurrentAuth, ReqMeta, RequirePermission, TENANT_HEADER } from '../../../../shared/security/decorators';
 import { RbacAccessService } from '../../application/rbac-access.service';
 import { RoleManagementService } from '../../application/role-management.service';
 import {
@@ -19,16 +21,28 @@ export class RbacController {
   constructor(
     private readonly management: RoleManagementService,
     private readonly access: RbacAccessService,
+    @Inject(TENANT_DIRECTORY) private readonly tenants: TenantDirectoryPort,
   ) {}
 
   @AuthenticatedOnly()
   @Get('me/permissions')
-  @ApiOperation({ summary: 'Permisos efectivos de la sesión actual (para que el front muestre u oculte opciones)' })
+  @ApiOperation({
+    summary: 'Permisos efectivos de la sesión actual. Sin header: ámbito plataforma. Con `X-Tenant-Slug`: ámbito de ese colegio (si el usuario pertenece a él).',
+  })
   @ApiOkResponse({ type: MyPermissionsResponseDto })
-  @ApiErrorResponses(ErrorCodes.AUTH_TOKEN_INVALID)
-  async myPermissions(@CurrentAuth() auth: AuthContext): Promise<MyPermissionsResponseDto> {
-    const set = await this.access.resolve(auth.userId, null);
-    return { permissions: [...set].sort() };
+  @ApiErrorResponses(ErrorCodes.AUTH_TOKEN_INVALID, ErrorCodes.RBAC_FORBIDDEN)
+  async myPermissions(@CurrentAuth() auth: AuthContext, @Headers(TENANT_HEADER) tenantSlug?: string): Promise<MyPermissionsResponseDto> {
+    if (!tenantSlug) {
+      const set = await this.access.resolve(auth.userId, null);
+      return { permissions: [...set].sort(), tenant: null };
+    }
+    // Mismos dos chequeos independientes que el guard: colegio activo real + membresía activa real.
+    const tenant = await this.tenants.findBySlug(tenantSlug);
+    if (!tenant || tenant.status !== 'active' || !(await this.access.hasActiveMembership(auth.userId, tenant.id))) {
+      throw new AppException(ErrorCodes.RBAC_FORBIDDEN);
+    }
+    const set = await this.access.resolve(auth.userId, tenant.id);
+    return { permissions: [...set].sort(), tenant: { id: tenant.id, slug: tenant.slug, legalName: tenant.legalName } };
   }
 
   @RequirePermission('rbac:read', 'Consultar módulos, APIs y roles')

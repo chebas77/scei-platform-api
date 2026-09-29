@@ -15,6 +15,7 @@ export type CreateTenantResult = { ok: true; tenant: Tenant } | { ok: false; con
 export interface TenantRepositoryPort {
   create(input: NewTenant, tx?: Tx): Promise<CreateTenantResult>;
   findById(id: string): Promise<Tenant | null>;
+  findBySlug(slug: string): Promise<Tenant | null>;
   /** Bloquea la fila (`FOR UPDATE`) dentro de la transacción para serializar cambios de estado. */
   findByIdForUpdate(id: string, tx: Tx): Promise<Tenant | null>;
   list(filter: { status?: TenantStatus; search?: string; page: number; pageSize: number }): Promise<Page<Tenant>>;

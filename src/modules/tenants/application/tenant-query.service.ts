@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { TenantDirectoryPort } from '../../../shared/contracts/tenant.contracts';
 import { AppException } from '../../../shared/errors/app.exception';
 import { ErrorCodes } from '../../../shared/errors/error-codes';
 import { Page } from '../../../shared/http/pagination';
@@ -18,7 +19,7 @@ export interface TenantDetailView extends TenantView {
 }
 
 @Injectable()
-export class TenantQueryService {
+export class TenantQueryService implements TenantDirectoryPort {
   constructor(
     @Inject(TENANT_REPOSITORY) private readonly tenants: TenantRepositoryPort,
     @Inject(PLAN_REPOSITORY) private readonly plans: PlanRepositoryPort,
@@ -43,5 +44,22 @@ export class TenantQueryService {
       this.plans.findById(tenant.planId), this.usage.latestFor(id), this.invitations.listByTenant(id),
     ]);
     return { tenant, plan, usage, invitations };
+  }
+
+  async findBasic(id: string): Promise<{ id: string; slug: string; legalName: string; status: Tenant['status'] } | null> {
+    const tenant = await this.tenants.findById(id);
+    return tenant ? { id: tenant.id, slug: tenant.slug, legalName: tenant.legalName, status: tenant.status } : null;
+  }
+
+  async findBySlug(slug: string): Promise<{ id: string; slug: string; legalName: string; status: Tenant['status'] } | null> {
+    const tenant = await this.tenants.findBySlug(slug);
+    return tenant ? { id: tenant.id, slug: tenant.slug, legalName: tenant.legalName, status: tenant.status } : null;
+  }
+
+  async getPlanLimits(tenantId: string): Promise<{ maxStudents: number; maxKiosks: number } | null> {
+    const tenant = await this.tenants.findById(tenantId);
+    if (!tenant) return null;
+    const plan = await this.plans.findById(tenant.planId);
+    return plan ? { maxStudents: plan.maxStudents, maxKiosks: plan.maxKiosks } : null;
   }
 }

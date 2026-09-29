@@ -49,6 +49,18 @@ export class MfaEnrollmentResponseDto {
   manualEntryKey: string;
 }
 
+export class MeTenantResponseDto {
+  @ApiProperty() id: string;
+  @ApiProperty() slug: string;
+  @ApiProperty() legalName: string;
+}
+
+export class MeMembershipResponseDto {
+  @ApiProperty() roleCode: string;
+  @ApiProperty() roleName: string;
+  @ApiProperty({ nullable: true, type: MeTenantResponseDto, description: 'Nulo si es una membresía de plataforma.' }) tenant: MeTenantResponseDto | null;
+}
+
 export class MeResponseDto {
   @ApiProperty({ format: 'uuid' })
   userId: string;
@@ -61,4 +73,7 @@ export class MeResponseDto {
 
   @ApiProperty({ enum: ['full', 'mfa_setup'] })
   scope: string;
+
+  @ApiProperty({ type: [MeMembershipResponseDto], description: 'A qué puede entrar: plataforma y/o uno o más colegios.' })
+  memberships: MeMembershipResponseDto[];
 }

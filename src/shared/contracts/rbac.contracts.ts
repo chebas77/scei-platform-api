@@ -1,8 +1,9 @@
 import { Tx } from '../database/tx';
 
-/** Búsqueda de roles del sistema por código (lo implementa RBAC). */
+/** Búsqueda de roles (lo implementa RBAC). */
 export interface RoleDirectoryPort {
   findSystemRole(code: string): Promise<{ id: string; scope: 'platform' | 'tenant' } | null>;
+  findById(id: string): Promise<{ id: string; code: string; name: string; scope: 'platform' | 'tenant' } | null>;
 }
 export const ROLE_DIRECTORY = Symbol('ROLE_DIRECTORY');
 
@@ -24,3 +25,25 @@ export interface TenantAccessRevokerPort {
   revokeAllForTenant(tenantId: string, tx?: Tx): Promise<number>;
 }
 export const TENANT_ACCESS_REVOKER = Symbol('TENANT_ACCESS_REVOKER');
+
+export interface MembershipInfo {
+  userId: string;
+  roleId: string;
+  roleCode: string;
+  roleName: string;
+}
+
+/** Consulta y edición de membresías (quién tiene qué rol en qué ámbito). Lo implementa RBAC, lo consume Users. */
+export interface MembershipDirectoryPort {
+  /** `tenantId = null` lista membresías de plataforma. */
+  listByScope(tenantId: string | null): Promise<MembershipInfo[]>;
+  /** Cuántos usuarios activos tienen ese rol de sistema (para no dejar la plataforma sin operador). */
+  countActiveUsersWithSystemRole(code: string): Promise<number>;
+  /** Reemplaza el rol del usuario en ese ámbito (deja como máximo un rol por usuario y ámbito). */
+  setRole(userId: string, tenantId: string | null, roleId: string, tx?: Tx): Promise<void>;
+  /** Verificación explícita (independiente de los permisos efectivos) de que el usuario pertenece a ese colegio. */
+  hasActiveMembership(userId: string, tenantId: string): Promise<boolean>;
+  /** Todas las membresías activas del usuario (plataforma y cualquier colegio) — para saber a dónde llevarlo tras el login. */
+  listForUser(userId: string): Promise<(MembershipInfo & { tenantId: string | null })[]>;
+}
+export const MEMBERSHIP_DIRECTORY = Symbol('MEMBERSHIP_DIRECTORY');

@@ -30,8 +30,15 @@ export interface PermissionResolverPort {
 }
 export const PERMISSION_RESOLVER = Symbol('PERMISSION_RESOLVER');
 
+/** Colegio resuelto y verificado (header `X-Tenant-Slug` + membresía activa) para rutas de ámbito colegio. */
+export interface TenantAuthContext {
+  id: string;
+  slug: string;
+}
+
 declare module 'fastify' {
   interface FastifyRequest {
     auth?: AuthContext;
+    tenant?: TenantAuthContext;
   }
 }

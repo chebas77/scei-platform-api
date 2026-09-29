@@ -2,22 +2,30 @@ import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/commo
 import { Reflector } from '@nestjs/core';
 import { FastifyRequest } from 'fastify';
 import { AUDIT_RECORDER, AuditRecorderPort } from '../audit/audit-recorder.port';
+import { MEMBERSHIP_DIRECTORY, MembershipDirectoryPort } from '../contracts/rbac.contracts';
+import { TENANT_DIRECTORY, TenantDirectoryPort } from '../contracts/tenant.contracts';
 import { AppException } from '../errors/app.exception';
 import { ErrorCodes } from '../errors/error-codes';
 import { PERMISSION_RESOLVER, PermissionResolverPort } from './auth-context';
-import { AUTH_ONLY_KEY, IS_PUBLIC_KEY, REQUIRE_PERMISSION_KEY, RequirePermissionMeta } from './decorators';
+import { API_MODULE_KEY, ApiModuleMeta, AUTH_ONLY_KEY, IS_PUBLIC_KEY, REQUIRE_PERMISSION_KEY, RequirePermissionMeta, TENANT_HEADER } from './decorators';
 
 /**
  * Guard global #2: autorización RBAC con denegación por defecto (OWASP A01/API5).
  *  - `@Public` y `@AuthenticatedOnly` pasan sin permiso.
  *  - Con `@RequirePermission` se exige el permiso en los roles del usuario.
  *  - Una ruta sin ninguna de las tres declaraciones se deniega: no puede quedar abierta por descuido.
+ *  - En controladores de ámbito colegio (`@ApiModule({ scope: 'tenant' })`) exige además el header
+ *    `X-Tenant-Slug` y verifica, con DOS chequeos independientes, que el usuario pertenece a ese colegio:
+ *    (1) tiene una membresía activa ahí, y (2) sus permisos efectivos EN ESE colegio incluyen el requerido.
+ *    Las rutas de plataforma no cambian: siguen evaluándose en tenantId=null, como siempre.
  */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     @Inject(PERMISSION_RESOLVER) private readonly resolver: PermissionResolverPort,
+    @Inject(MEMBERSHIP_DIRECTORY) private readonly memberships: MembershipDirectoryPort,
+    @Inject(TENANT_DIRECTORY) private readonly tenants: TenantDirectoryPort,
     @Inject(AUDIT_RECORDER) private readonly audit: AuditRecorderPort,
   ) {}
 
@@ -36,13 +44,37 @@ export class PermissionsGuard implements CanActivate {
     const userId = req.auth?.userId;
     if (!userId) throw new AppException(ErrorCodes.AUTH_TOKEN_INVALID);
 
-    // Las rutas de plataforma se evalúan en el ámbito global (tenantId null).
-    const granted = await this.resolver.resolve(userId, null);
+    const moduleMeta = this.reflector.getAllAndOverride<ApiModuleMeta | undefined>(API_MODULE_KEY, targets);
+    const tenantId = moduleMeta?.scope === 'tenant' ? await this.resolveTenant(req, userId) : null;
+
+    const granted = await this.resolver.resolve(userId, tenantId);
     if (!granted.has(required.code)) {
       await this.deny(req, 'missing-permission', required.code);
       throw new AppException(ErrorCodes.RBAC_FORBIDDEN);
     }
     return true;
+  }
+
+  /** Resuelve y verifica el colegio de la solicitud. Nunca revela si un slug existe: toda falla es RBAC_FORBIDDEN salvo el header ausente. */
+  private async resolveTenant(req: FastifyRequest, userId: string): Promise<string> {
+    const slug = req.headers[TENANT_HEADER];
+    if (typeof slug !== 'string' || !slug) {
+      await this.deny(req, 'missing-tenant-header', undefined);
+      throw new AppException(ErrorCodes.TEN_CONTEXT_REQUIRED);
+    }
+    const tenant = await this.tenants.findBySlug(slug);
+    if (!tenant || tenant.status !== 'active') {
+      await this.deny(req, 'unknown-or-inactive-tenant', undefined);
+      throw new AppException(ErrorCodes.RBAC_FORBIDDEN);
+    }
+    // Chequeo independiente de la resolución de permisos: aunque el cálculo de permisos tuviera un bug,
+    // esto por sí solo ya exige una fila de membresía activa real para ESE usuario en ESE colegio.
+    if (!(await this.memberships.hasActiveMembership(userId, tenant.id))) {
+      await this.deny(req, 'not-a-member', undefined);
+      throw new AppException(ErrorCodes.RBAC_FORBIDDEN);
+    }
+    req.tenant = { id: tenant.id, slug: tenant.slug };
+    return tenant.id;
   }
 
   private async deny(req: FastifyRequest, reason: string, permission: string | undefined): Promise<void> {

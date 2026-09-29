@@ -29,6 +29,41 @@
       "when": 1790641759915,
       "tag": "0003_seed_system_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790648470404,
+      "tag": "0004_next_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790648477802,
+      "tag": "0005_operator_invitations_foreign_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790660310835,
+      "tag": "0006_wild_exiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790660315476,
+      "tag": "0007_kiosks_foreign_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790662252719,
+      "tag": "0008_seed_student_role",
+      "breakpoints": true
     }
   ]
 }
