@@ -5,7 +5,7 @@
  *   SYS  sistema/transversal   VAL  validación     AUTH  autenticación e identidad
  *   RBAC roles y permisos      TEN  tenants        PLAN  planes
  *   AUD  auditoría             MET  métricas       USR   usuarios/operadores
- *   KIO  kioscos (colegio)
+ *   KIO  kioscos (colegio)         ACA  estructura académica       STU  alumnos
  *
  * Reglas:
  *  - Un código nunca se reutiliza ni cambia de significado (los clientes dependen de él).
@@ -83,6 +83,24 @@ export const ErrorCodes = define({
   KIO_NOT_FOUND: { code: 'KIO-001', status: 404, message: 'El kiosco no existe.' },
   KIO_CODE_TAKEN: { code: 'KIO-002', status: 409, message: 'Ya existe un kiosco con ese código en este colegio.' },
   KIO_LIMIT_REACHED: { code: 'KIO-003', status: 409, message: 'El colegio alcanzó el máximo de kioscos de su plan.' },
+
+  // ── Estructura académica (colegio) ─────────────────────────────────────
+  ACA_YEAR_NOT_FOUND: { code: 'ACA-001', status: 404, message: 'El ciclo escolar no existe.' },
+  ACA_YEAR_TAKEN: { code: 'ACA-002', status: 409, message: 'Ya existe un ciclo escolar para ese año.' },
+  ACA_GRADE_NOT_FOUND: { code: 'ACA-003', status: 404, message: 'El grado no existe.' },
+  ACA_GRADE_TAKEN: { code: 'ACA-004', status: 409, message: 'Ya existe un grado con ese nombre.' },
+  ACA_GRADE_IN_USE: { code: 'ACA-005', status: 409, message: 'El grado tiene secciones y no se puede eliminar.' },
+  ACA_SECTION_NOT_FOUND: { code: 'ACA-006', status: 404, message: 'La sección no existe.' },
+  ACA_SECTION_TAKEN: { code: 'ACA-007', status: 409, message: 'Ya existe una sección con ese nombre en ese grado y ciclo.' },
+  ACA_SECTION_HAS_ENROLLMENTS: { code: 'ACA-008', status: 409, message: 'La sección tiene alumnos matriculados y no se puede eliminar.' },
+  ACA_SCOPE_MISMATCH: { code: 'ACA-009', status: 400, message: 'El grado o la sección no corresponden a ese ciclo escolar.' },
+  ACA_ALREADY_ENROLLED: { code: 'ACA-010', status: 409, message: 'El alumno ya tiene una matrícula en ese ciclo escolar.' },
+  ACA_ENROLLMENT_NOT_FOUND: { code: 'ACA-011', status: 404, message: 'La matrícula no existe.' },
+
+  // ── Alumnos ─────────────────────────────────────────────────────────────
+  STU_NOT_FOUND: { code: 'STU-001', status: 404, message: 'El alumno no existe.' },
+  STU_CODE_TAKEN: { code: 'STU-002', status: 409, message: 'Ya existe un alumno con ese código en este colegio.' },
+  STU_LIMIT_REACHED: { code: 'STU-003', status: 409, message: 'El colegio alcanzó el máximo de alumnos de su plan.' },
 } as const);
 
 export type ErrorKey = keyof typeof ErrorCodes;

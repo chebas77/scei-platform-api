@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_CONFIG, AppConfig } from '../../shared/config/env';
-import { TENANT_DIRECTORY } from '../../shared/contracts/tenant.contracts';
+import { TENANT_DATA_KEY, TENANT_DIRECTORY } from '../../shared/contracts/tenant.contracts';
 import { AcceptInvitationUseCase } from './application/accept-invitation.use-case';
 import { CreateTenantUseCase } from './application/create-tenant.use-case';
 import { MetricsService } from './application/metrics.service';
@@ -43,6 +43,7 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     { provide: INVITATION_REPOSITORY, useClass: DrizzleInvitationRepository },
     { provide: CERTIFICATE_REPOSITORY, useClass: DrizzleCertificateRepository },
     { provide: TENANT_KEY_STORE, useClass: DrizzleTenantKeyStore },
+    { provide: TENANT_DATA_KEY, useExisting: TENANT_KEY_STORE },
     ConsoleNotifier,
     {
       provide: NOTIFIER,
@@ -59,6 +60,6 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     TenantQueryService,
     MetricsService,
   ],
-  exports: [TENANT_KEY_STORE, TenantDataPurgerRegistry, NOTIFIER, ConsoleNotifier, TENANT_DIRECTORY],
+  exports: [TENANT_KEY_STORE, TENANT_DATA_KEY, TenantDataPurgerRegistry, NOTIFIER, ConsoleNotifier, TENANT_DIRECTORY],
 })
 export class TenantsModule {}

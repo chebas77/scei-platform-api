@@ -1,14 +1,23 @@
 import { check, index, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { academicYears } from './academic-years.table';
+import { sections } from './sections.table';
 
-/** Matrícula: un alumno en una sección, dentro de un ciclo escolar. A lo más una activa por alumno y ciclo. */
+/**
+ * Matrícula: un alumno en una sección, dentro de un ciclo escolar. A lo más una activa por alumno y ciclo.
+ * `student_id` referencia la tabla `students` de otro módulo: su FK va en la migración cruzada.
+ */
 export const enrollments = pgTable(
   'enrollments',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     tenantId: uuid('tenant_id').notNull(),
-    academicYearId: uuid('academic_year_id').notNull(),
-    sectionId: uuid('section_id').notNull(),
+    academicYearId: uuid('academic_year_id')
+      .notNull()
+      .references(() => academicYears.id, { onDelete: 'cascade' }),
+    sectionId: uuid('section_id')
+      .notNull()
+      .references(() => sections.id, { onDelete: 'restrict' }),
     studentId: uuid('student_id').notNull(),
     status: text('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

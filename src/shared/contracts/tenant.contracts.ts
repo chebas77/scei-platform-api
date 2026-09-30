@@ -14,3 +14,10 @@ export interface TenantDirectoryPort {
   getPlanLimits(tenantId: string): Promise<{ maxStudents: number; maxKiosks: number } | null>;
 }
 export const TENANT_DIRECTORY = Symbol('TENANT_DIRECTORY');
+
+/** Clave de datos (DEK) de un colegio, para módulos que cifran datos propios del colegio (lo implementa Tenants). */
+export interface TenantDataKeyPort {
+  /** `null` si el colegio no tiene clave (p. ej. fue dado de baja: crypto-shredding). */
+  unwrap(tenantId: string): Promise<Buffer | null>;
+}
+export const TENANT_DATA_KEY = Symbol('TENANT_DATA_KEY');

@@ -1,4 +1,6 @@
 import { index, pgTable, text, unique, uuid } from 'drizzle-orm/pg-core';
+import { academicYears } from './academic-years.table';
+import { gradeLevels } from './grade-levels.table';
 
 /** Instancia de un grado dentro de un ciclo escolar concreto (ej. "1°A" en 2026). */
 export const sections = pgTable(
@@ -6,8 +8,12 @@ export const sections = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     tenantId: uuid('tenant_id').notNull(),
-    academicYearId: uuid('academic_year_id').notNull(),
-    gradeLevelId: uuid('grade_level_id').notNull(),
+    academicYearId: uuid('academic_year_id')
+      .notNull()
+      .references(() => academicYears.id, { onDelete: 'cascade' }),
+    gradeLevelId: uuid('grade_level_id')
+      .notNull()
+      .references(() => gradeLevels.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
   },
   (t) => [
