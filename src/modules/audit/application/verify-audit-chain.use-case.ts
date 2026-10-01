@@ -9,6 +9,7 @@ export interface ChainVerification {
   firstBrokenId: number | null;
 }
 
+
 @Injectable()
 export class VerifyAuditChainUseCase {
   private static readonly BATCH = 1000;
